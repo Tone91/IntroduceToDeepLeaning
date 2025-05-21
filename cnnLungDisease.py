@@ -1,5 +1,9 @@
 # %%
-from tensorflow.keras.datasets import cifar10
+import os
+import numpy as np
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D
@@ -8,26 +12,46 @@ from tensorflow.keras.layers import Dropout
 from tensorflow.keras.layers import Flatten
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.callbacks import TensorBoard
-import matplotlib.pyplot as plt
 
 # %%
-(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+data_dir = r"C:\Users\user\Documents\PythonProjects\tf\LungDiseaseImages"
+class_names = os.listdir(data_dir)  # クラス名のリスト
+print(class_names)
 
 # %%
-print('x_train.shape :', x_train.shape)
-print('x_test.shape :', x_test.shape)
-print('y_train.shape :', y_train.shape)
-print('y_test.shape :', y_test.shape)
+images = []
+labels = []
+label_map = {name: i for i, name in enumerate(sorted(class_names))} # 辞書順にラベル付け
+
+# 画像ファイルのパスを作成しリストに追加・ラベル付け
+for class_name in class_names:
+    class_dir = os.path.join(data_dir, class_name)
+    for fname in os.listdir(class_dir):
+        if fname.endswith('.png'):
+            fpath = os.path.join(class_dir, fname)
+            img = load_img(fpath, target_size=(32, 32))
+            img_array = img_to_array(img) / 255.0 # 正規化
+            images.append(img_array)
+            labels.append(label_map[class_name])
+
+x = np.array(images)
+y = np.array(labels)
+# %%
+# 学習用とテスト用に分割（8:2）
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
 
 # %%
-# 特徴量の正規化
-x_train = x_train / 255
-x_test = x_test / 255
-
 # クラスベクトルの1-hotベクトル化
-y_train = to_categorical(y_train, 10)
-y_test = to_categorical(y_test, 10)
+y_train = to_categorical(y_train, 6)
+y_test = to_categorical(y_test, 6)
 
+# %%
+print("Label map:")
+for name, idx in label_map.items():
+    print(f"{idx}: {name}")
+
+# %%
 # %%
 model = Sequential()
 
@@ -102,7 +126,7 @@ model.output_shape
 
 model.add(Dense(units=512, activation='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(units=10, activation='softmax'))
+model.add(Dense(units=6, activation='softmax'))
 
 # %%
 # 学習
@@ -166,5 +190,7 @@ axs[1, 1].grid(True)
 
 # グラフのレイアウト調整
 plt.tight_layout()
-plt.savefig('C:\\Users\\user\\Documents\\PythonProjects\\tf\\cnn.png')
+plt.savefig('C:\\Users\\user\\Documents\\PythonProjects\\tf\\cnnLungDisease.png')
 plt.show()
+
+# %%
